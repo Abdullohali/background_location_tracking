@@ -1,7 +1,4 @@
-import 'dart:ui' show DartPluginRegistrant;
-
 import 'package:flutter/material.dart';
-import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -13,7 +10,6 @@ import 'dart:async';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  await initializeService();
   runApp(MyApp());
 }
 
@@ -48,6 +44,7 @@ class _LocationTrackerScreenState extends State<LocationTrackerScreen>
   User? currentUser;
   bool isTracking = false;
   bool isLoading = true;
+  Timer? backgroundTimer;
 
   @override
   void initState() {
@@ -61,6 +58,7 @@ class _LocationTrackerScreenState extends State<LocationTrackerScreen>
     WidgetsBinding.instance.removeObserver(this);
     locationSubscription?.cancel();
     firestoreSubscription?.cancel();
+    backgroundTimer?.cancel();
     super.dispose();
   }
 
@@ -71,6 +69,11 @@ class _LocationTrackerScreenState extends State<LocationTrackerScreen>
     if (state == AppLifecycleState.resumed) {
       if (isTracking) {
         startLocationUpdates();
+      }
+    } else if (state == AppLifecycleState.paused) {
+      // App backgroundga ketganda ham location tracking davom etsin
+      if (isTracking) {
+        startBackgroundTracking();
       }
     }
   }
@@ -177,10 +180,26 @@ class _LocationTrackerScreenState extends State<LocationTrackerScreen>
     });
   }
 
+  void startBackgroundTracking() {
+    // Background'da har 15 sekundda location update
+    backgroundTimer?.cancel();
+    backgroundTimer = Timer.periodic(Duration(seconds: 15), (timer) async {
+      try {
+        Position position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+        );
+        await updateLocationInFirestore(position);
+        print(
+            'Background location updated: ${position.latitude}, ${position.longitude}');
+      } catch (e) {
+        print('Background location error: $e');
+      }
+    });
+  }
+
   void stopLocationUpdates() {
     locationSubscription?.cancel();
-    final service = FlutterBackgroundService();
-    service.invoke("stopService");
+    backgroundTimer?.cancel();
   }
 
   Future<void> updateLocationInFirestore(Position position) async {
@@ -286,8 +305,7 @@ class _LocationTrackerScreenState extends State<LocationTrackerScreen>
 
     if (isTracking) {
       startLocationUpdates();
-      final service = FlutterBackgroundService();
-      service.startService();
+      startBackgroundTracking();
     } else {
       stopLocationUpdates();
       if (currentUser != null) {
@@ -469,87 +487,4 @@ class _LocationTrackerScreenState extends State<LocationTrackerScreen>
       ),
     );
   }
-}
-
-// Background service
-Future<void> initializeService() async {
-  final service = FlutterBackgroundService();
-
-  await service.configure(
-    androidConfiguration: AndroidConfiguration(
-      onStart: onStart,
-      autoStart: false,
-      isForegroundMode: true,
-      notificationChannelId: 'location_tracking',
-      initialNotificationTitle: 'Location Tracking',
-      initialNotificationContent: 'Tracking your location',
-      foregroundServiceNotificationId: 888,
-    ),
-    iosConfiguration: IosConfiguration(
-      autoStart: false,
-      onForeground: onStart,
-      onBackground: onIosBackground,
-    ),
-  );
-}
-
-@pragma('vm:entry-point')
-void onStart(ServiceInstance service) async {
-  DartPluginRegistrant.ensureInitialized();
-
-  await Firebase.initializeApp();
-
-  service.on('stopService').listen((event) {
-    service.stopSelf();
-  });
-
-  // Background location updates
-  Timer.periodic(Duration(seconds: 15), (timer) async {
-    try {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        print('Location service disabled');
-        return;
-      }
-
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
-
-      User? user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        await FirebaseFirestore.instance
-            .collection('locations')
-            .doc(user.uid)
-            .set({
-          'latitude': position.latitude,
-          'longitude': position.longitude,
-          'timestamp': FieldValue.serverTimestamp(),
-          'userId': user.uid,
-          'accuracy': position.accuracy,
-        });
-
-        print(
-            'Background location updated: ${position.latitude}, ${position.longitude}');
-
-        // Update notification
-        if (service is AndroidServiceInstance) {
-          service.setForegroundNotificationInfo(
-            title: "Location Tracking",
-            content:
-                "Lat: ${position.latitude.toStringAsFixed(4)}, Lon: ${position.longitude.toStringAsFixed(4)}",
-          );
-        }
-      }
-    } catch (e) {
-      print('Background location update error: $e');
-    }
-  });
-}
-
-@pragma('vm:entry-point')
-Future<bool> onIosBackground(ServiceInstance service) async {
-  WidgetsFlutterBinding.ensureInitialized();
-  DartPluginRegistrant.ensureInitialized();
-  return true;
 }

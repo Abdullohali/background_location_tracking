@@ -50,16 +50,6 @@
       ]
     },
     {
-      "name": "flutter_background_service",
-      "version": "5.1.0",
-      "dependencies": [
-        "flutter",
-        "flutter_background_service_android",
-        "flutter_background_service_ios",
-        "flutter_background_service_platform_interface"
-      ]
-    },
-    {
       "name": "cupertino_icons",
       "version": "1.0.8",
       "dependencies": []
@@ -88,6 +78,16 @@
         "permission_handler_html",
         "permission_handler_platform_interface",
         "permission_handler_windows"
+      ]
+    },
+    {
+      "name": "flutter_background_service",
+      "version": "5.1.0",
+      "dependencies": [
+        "flutter",
+        "flutter_background_service_android",
+        "flutter_background_service_ios",
+        "flutter_background_service_platform_interface"
       ]
     },
     {
@@ -260,31 +260,6 @@
       ]
     },
     {
-      "name": "flutter_background_service_ios",
-      "version": "5.0.3",
-      "dependencies": [
-        "flutter",
-        "flutter_background_service_platform_interface"
-      ]
-    },
-    {
-      "name": "flutter_background_service_android",
-      "version": "6.3.1",
-      "dependencies": [
-        "flutter",
-        "flutter_background_service_platform_interface"
-      ]
-    },
-    {
-      "name": "flutter_background_service_platform_interface",
-      "version": "5.1.2",
-      "dependencies": [
-        "flutter",
-        "platform",
-        "plugin_platform_interface"
-      ]
-    },
-    {
       "name": "shared_preferences_windows",
       "version": "2.4.1",
       "dependencies": [
@@ -383,6 +358,31 @@
       "dependencies": [
         "flutter",
         "permission_handler_platform_interface"
+      ]
+    },
+    {
+      "name": "flutter_background_service_ios",
+      "version": "5.0.3",
+      "dependencies": [
+        "flutter",
+        "flutter_background_service_platform_interface"
+      ]
+    },
+    {
+      "name": "flutter_background_service_android",
+      "version": "6.3.1",
+      "dependencies": [
+        "flutter",
+        "flutter_background_service_platform_interface"
+      ]
+    },
+    {
+      "name": "flutter_background_service_platform_interface",
+      "version": "5.1.2",
+      "dependencies": [
+        "flutter",
+        "platform",
+        "plugin_platform_interface"
       ]
     },
     {
@@ -646,18 +646,6 @@
       ]
     },
     {
-      "name": "plugin_platform_interface",
-      "version": "2.1.8",
-      "dependencies": [
-        "meta"
-      ]
-    },
-    {
-      "name": "platform",
-      "version": "3.1.6",
-      "dependencies": []
-    },
-    {
       "name": "path_provider_windows",
       "version": "2.3.0",
       "dependencies": [
@@ -697,6 +685,13 @@
       ]
     },
     {
+      "name": "plugin_platform_interface",
+      "version": "2.1.8",
+      "dependencies": [
+        "meta"
+      ]
+    },
+    {
       "name": "path_provider_linux",
       "version": "2.2.1",
       "dependencies": [
@@ -706,6 +701,11 @@
         "path_provider_platform_interface",
         "xdg_directories"
       ]
+    },
+    {
+      "name": "platform",
+      "version": "3.1.6",
+      "dependencies": []
     },
     {
       "name": "stream_transform",
