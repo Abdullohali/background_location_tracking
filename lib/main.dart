@@ -1,15 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:async';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
   runApp(MyApp());
 }
 
@@ -40,8 +36,6 @@ class _LocationTrackerScreenState extends State<LocationTrackerScreen>
   Set<Marker> markers = {};
   Set<Circle> circles = {};
   StreamSubscription<Position>? locationSubscription;
-  StreamSubscription<QuerySnapshot>? firestoreSubscription;
-  User? currentUser;
   bool isTracking = false;
   bool isLoading = true;
   Timer? backgroundTimer;
@@ -57,7 +51,6 @@ class _LocationTrackerScreenState extends State<LocationTrackerScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     locationSubscription?.cancel();
-    firestoreSubscription?.cancel();
     backgroundTimer?.cancel();
     super.dispose();
   }
@@ -80,9 +73,9 @@ class _LocationTrackerScreenState extends State<LocationTrackerScreen>
 
   Future<void> initializeApp() async {
     await requestPermissions();
-    await signInAnonymously();
+    // await signInAnonymously();
     await getCurrentLocation();
-    listenToOtherUsers();
+    // listenToOtherUsers();
     setState(() {
       isLoading = false;
     });
@@ -108,16 +101,16 @@ class _LocationTrackerScreenState extends State<LocationTrackerScreen>
     await Permission.locationAlways.request();
   }
 
-  Future<void> signInAnonymously() async {
-    try {
-      UserCredential userCredential =
-          await FirebaseAuth.instance.signInAnonymously();
-      currentUser = userCredential.user;
-      print('Signed in with User ID: ${currentUser?.uid}');
-    } catch (e) {
-      print('Anonymous sign in failed: $e');
-    }
-  }
+  // Future<void> signInAnonymously() async {
+  //   try {
+  //     UserCredential userCredential =
+  //         await FirebaseAuth.instance.signInAnonymously();
+  //     currentUser = userCredential.user;
+  //     print('Signed in with User ID: ${currentUser?.uid}');
+  //   } catch (e) {
+  //     print('Anonymous sign in failed: $e');
+  //   }
+  // }
 
   Future<void> getCurrentLocation() async {
     try {
@@ -165,7 +158,7 @@ class _LocationTrackerScreenState extends State<LocationTrackerScreen>
         currentLocation = position;
       });
 
-      updateLocationInFirestore(position);
+      // updateLocationInFirestore(position);
 
       if (mapController != null) {
         mapController!.animateCamera(
@@ -188,7 +181,7 @@ class _LocationTrackerScreenState extends State<LocationTrackerScreen>
         Position position = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.high,
         );
-        await updateLocationInFirestore(position);
+        // await updateLocationInFirestore(position);
         print(
             'Background location updated: ${position.latitude}, ${position.longitude}');
       } catch (e) {
@@ -202,101 +195,101 @@ class _LocationTrackerScreenState extends State<LocationTrackerScreen>
     backgroundTimer?.cancel();
   }
 
-  Future<void> updateLocationInFirestore(Position position) async {
-    if (currentUser != null) {
-      try {
-        await FirebaseFirestore.instance
-            .collection('locations')
-            .doc(currentUser!.uid)
-            .set({
-          'latitude': position.latitude,
-          'longitude': position.longitude,
-          'timestamp': FieldValue.serverTimestamp(),
-          'userId': currentUser!.uid,
-          'accuracy': position.accuracy,
-        });
-      } catch (e) {
-        print('Error updating location: $e');
-      }
-    }
-  }
+  // Future<void> updateLocationInFirestore(Position position) async {
+  //   if (currentUser != null) {
+  //     try {
+  //       await FirebaseFirestore.instance
+  //           .collection('locations')
+  //           .doc(currentUser!.uid)
+  //           .set({
+  //         'latitude': position.latitude,
+  //         'longitude': position.longitude,
+  //         'timestamp': FieldValue.serverTimestamp(),
+  //         'userId': currentUser!.uid,
+  //         'accuracy': position.accuracy,
+  //       });
+  //     } catch (e) {
+  //       print('Error updating location: $e');
+  //     }
+  //   }
+  // }
 
-  void listenToOtherUsers() {
-    firestoreSubscription = FirebaseFirestore.instance
-        .collection('locations')
-        .snapshots()
-        .listen((QuerySnapshot snapshot) {
-      Set<Marker> newMarkers = {};
-      Set<Circle> newCircles = {};
+  // void listenToOtherUsers() {
+  //   firestoreSubscription = FirebaseFirestore.instance
+  //       .collection('locations')
+  //       .snapshots()
+  //       .listen((QuerySnapshot snapshot) {
+  //     Set<Marker> newMarkers = {};
+  //     Set<Circle> newCircles = {};
 
-      for (QueryDocumentSnapshot doc in snapshot.docs) {
-        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+  //     for (QueryDocumentSnapshot doc in snapshot.docs) {
+  //       Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
 
-        if (doc.id != currentUser?.uid &&
-            data['latitude'] != null &&
-            data['longitude'] != null) {
-          LatLng position = LatLng(data['latitude'], data['longitude']);
+  //       if (doc.id != currentUser?.uid &&
+  //           data['latitude'] != null &&
+  //           data['longitude'] != null) {
+  //         LatLng position = LatLng(data['latitude'], data['longitude']);
 
-          newMarkers.add(
-            Marker(
-              markerId: MarkerId(doc.id),
-              position: position,
-              infoWindow: InfoWindow(
-                title: 'User ${doc.id.substring(0, 8)}',
-                snippet: 'Online user',
-              ),
-              icon: BitmapDescriptor.defaultMarkerWithHue(
-                  BitmapDescriptor.hueRed),
-            ),
-          );
+  //         newMarkers.add(
+  //           Marker(
+  //             markerId: MarkerId(doc.id),
+  //             position: position,
+  //             infoWindow: InfoWindow(
+  //               title: 'User ${doc.id.substring(0, 8)}',
+  //               snippet: 'Online user',
+  //             ),
+  //             icon: BitmapDescriptor.defaultMarkerWithHue(
+  //                 BitmapDescriptor.hueRed),
+  //           ),
+  //         );
 
-          newCircles.add(
-            Circle(
-              circleId: CircleId(doc.id),
-              center: position,
-              radius: 100,
-              fillColor: Colors.red.withOpacity(0.1),
-              strokeColor: Colors.red,
-              strokeWidth: 1,
-            ),
-          );
-        }
-      }
+  //         newCircles.add(
+  //           Circle(
+  //             circleId: CircleId(doc.id),
+  //             center: position,
+  //             radius: 100,
+  //             fillColor: Colors.red.withOpacity(0.1),
+  //             strokeColor: Colors.red,
+  //             strokeWidth: 1,
+  //           ),
+  //         );
+  //       }
+  //     }
 
-      if (currentLocation != null) {
-        newMarkers.add(
-          Marker(
-            markerId: MarkerId('current_user'),
-            position:
-                LatLng(currentLocation!.latitude, currentLocation!.longitude),
-            infoWindow: InfoWindow(
-              title: 'Siz',
-              snippet: 'Sizning joylashuvingiz',
-            ),
-            icon: BitmapDescriptor.defaultMarkerWithHue(
-                BitmapDescriptor.hueGreen),
-          ),
-        );
+  //     if (currentLocation != null) {
+  //       newMarkers.add(
+  //         Marker(
+  //           markerId: MarkerId('current_user'),
+  //           position:
+  //               LatLng(currentLocation!.latitude, currentLocation!.longitude),
+  //           infoWindow: InfoWindow(
+  //             title: 'Siz',
+  //             snippet: 'Sizning joylashuvingiz',
+  //           ),
+  //           icon: BitmapDescriptor.defaultMarkerWithHue(
+  //               BitmapDescriptor.hueGreen),
+  //         ),
+  //       );
 
-        newCircles.add(
-          Circle(
-            circleId: CircleId('current_user'),
-            center:
-                LatLng(currentLocation!.latitude, currentLocation!.longitude),
-            radius: 100,
-            fillColor: Colors.green.withOpacity(0.1),
-            strokeColor: Colors.green,
-            strokeWidth: 2,
-          ),
-        );
-      }
+  //       newCircles.add(
+  //         Circle(
+  //           circleId: CircleId('current_user'),
+  //           center:
+  //               LatLng(currentLocation!.latitude, currentLocation!.longitude),
+  //           radius: 100,
+  //           fillColor: Colors.green.withOpacity(0.1),
+  //           strokeColor: Colors.green,
+  //           strokeWidth: 2,
+  //         ),
+  //       );
+  //     }
 
-      setState(() {
-        markers = newMarkers;
-        circles = newCircles;
-      });
-    });
-  }
+  //     setState(() {
+  //       markers = newMarkers;
+  //       circles = newCircles;
+  //     });
+  //   });
+  // }
 
   void toggleTracking() {
     setState(() {
@@ -308,12 +301,12 @@ class _LocationTrackerScreenState extends State<LocationTrackerScreen>
       startBackgroundTracking();
     } else {
       stopLocationUpdates();
-      if (currentUser != null) {
-        FirebaseFirestore.instance
-            .collection('locations')
-            .doc(currentUser!.uid)
-            .delete();
-      }
+      // if (currentUser != null) {
+      //   FirebaseFirestore.instance
+      //       .collection('locations')
+      //       .doc(currentUser!.uid)
+      //       .delete();
+      // }
     }
   }
 

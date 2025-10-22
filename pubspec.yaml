@@ -11,12 +11,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  
-  # Firebase
-  firebase_core: ^2.24.2
-  firebase_auth: ^4.15.3
-  cloud_firestore: ^4.13.6
-  
   # Location services
   geolocator: ^10.1.0
   geocoding: ^2.1.1
